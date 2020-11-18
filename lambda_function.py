@@ -79,9 +79,23 @@ def close(session_attributes, fulfillment_state, message):
 
     return response
 
+def get_investment_recommendation(risk_level):
+    """
+    Returns an initial investment recommendation based on the risk profile.
+    """
+    risk_levels = {
+        "none": "100% bonds (AGG), 0% equities (SPY)",
+        "very low": "80% bonds (AGG), 20% equities (SPY)",
+        "low": "60% bonds (AGG), 40% equities (SPY)",
+        "medium": "40% bonds (AGG), 60% equities (SPY)",
+        "high": "20% bonds (AGG), 80% equities (SPY)",
+        "very high": "0% bonds (AGG), 100% equities (SPY)",
+    }
+    return risk_levels[risk_level.lower()]
 
 ### Intents Handlers ###
 def recommend_portfolio(intent_request):
+    
     """
     Performs dialog management and fulfillment for recommending a portfolio.
     """
@@ -98,7 +112,34 @@ def recommend_portfolio(intent_request):
         # for the first violation detected.
 
         ### YOUR DATA VALIDATION CODE STARTS HERE ###
-
+        
+        if age is not None:
+            # Ensure age variable is parsed as an integer
+            age = parse_int(age)
+            
+            if age < 0:
+                return build_validation_result(
+                    False,
+                    "age",
+                    "We require you to be living in order to assist you. Consider reincarnation or astral projection back into a corporeal form.",
+                )
+            elif age >= 65:
+                return build_validation_result(
+                    False,
+                    "age",
+                    "I can only suggest ideal retirement for people 65 and under. Please reach out to your nearest financial advisor for help over 65.",
+                )
+                
+        if investment_amount is not None:
+            investment_amount = parse_int(investment_amount)
+            if investment_amount < 5000:
+                return build_validation_result(
+                    False,
+                    "investmentAmount",
+                    "In order to assist you, we must start with at least $5000 in investment.",
+                )
+                
+        return build_validation_result(True, None, None)
         ### YOUR DATA VALIDATION CODE ENDS HERE ###
 
         # Fetch current session attibutes
@@ -109,9 +150,11 @@ def recommend_portfolio(intent_request):
     # Get the initial investment recommendation
 
     ### YOUR FINAL INVESTMENT RECOMMENDATION CODE STARTS HERE ###
+    
+    initial_recommendation = get_investment_recommendation(risk_level)
 
     ### YOUR FINAL INVESTMENT RECOMMENDATION CODE ENDS HERE ###
-
+        
     # Return a message with the initial recommendation based on the risk level.
     return close(
         intent_request["sessionAttributes"],
